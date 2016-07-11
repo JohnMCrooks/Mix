@@ -218,25 +218,30 @@ public class MixRestController {
     }
 
     @RequestMapping(path = "/delete-recipe", method = RequestMethod.POST)
-    public void deleteRecipe(HttpSession session, int id) throws Exception {
-        Recipe r = recipeRepo.findOne(id);
+    public void deleteRecipe(HttpServletResponse response, HttpSession session, Integer id) throws Exception {
+        if (id !=null) {
+            Recipe r = recipeRepo.findOne(id);
+            String username = (String) session.getAttribute("username");
+            if (username == null) {
+                throw new Exception("Not logged in!");
+            }
 
-        String username = (String) session.getAttribute("username");
-        if (username == null) {
-            throw new Exception("Not logged in!");
+            User user = userRepo.findByUsername(username);
+            if (user == null) {
+                throw new Exception("User not in database!");
+            }
+            else if (user != r.getUser()){
+                throw new Exception("logged in user and recipe creator do not match");
+            }
+
+            File f = new File("public/files/" + r.getFileName());
+            f.delete();
+            recipeRepo.delete(r);
+        } else{
+            throw new Exception(" Error Null Id Being passed through");
         }
 
-        User user = userRepo.findByUsername(username);
-        if (user == null) {
-            throw new Exception("User not in database!");
-        }
-        else if (user != r.getUser()){
-            throw new Exception("logged in user and recipe creator do not match");
-        }
-
-        File f = new File("public/files/" + r.getFileName());
-        f.delete();
-        recipeRepo.delete(r);
+        response.sendRedirect("/#/rating");
     }
 
     @RequestMapping(path = "/favs", method = RequestMethod.POST)
